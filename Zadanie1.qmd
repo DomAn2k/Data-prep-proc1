@@ -1,0 +1,133 @@
+---
+title: "Przygotowanie danych 1"
+format: html
+echo: false
+author: Piasecki Dominik
+date: last-modified
+date-format: YYYY-MM-DD HH:mm
+---
+```{python}
+# Wczytywanie potrzebnych pakietów
+import os
+import pandas as pd
+from tabulate import tabulate
+import matplotlib.pyplot as plt
+```
+
+```{python}
+# Ścieżka do folderu z plikami
+folder_path = r'data'
+
+# Pliki csv
+file_names = [
+    'ZAP_KSE_20220101to20220331_20220406090530.csv',
+    'ZAP_KSE_20220701to20220930_20221002230633.csv',
+    'ZAP_KSE_20220401to20220630_20220708120542.csv',
+    'ZAP_KSE_20221001to20221231_20230104110611.csv'
+]
+```
+
+```{python}
+# Odczyt danych oraz połączenie do jednego dataframe
+dataframes = [pd.read_csv(os.path.join(folder_path, file), delimiter=';', engine='python') for file in file_names]
+combined_df = pd.concat(dataframes, ignore_index=True)
+```
+
+### Tabela z przykładowymi danymi.
+```{python}
+# Wczytywanie pierwszych 10 rekordów
+first_10_records = combined_df.head(10)
+
+# Wyświetlanie pierwszych 10 rekordów w formie tabeli
+print(tabulate(first_10_records, headers='keys', tablefmt='pipe'))
+```
+
+### Wstępny przegląd danych.
+```{python}
+# Wstępna inspekcja danych
+data_count = combined_df.shape[0]
+data_types = combined_df.dtypes
+unique_values_count = combined_df.nunique()
+
+# Wyświetlanie kolumn które mają mniej niż 10 unikalnych wartości
+threshold = 10
+unique_values_details = {col: combined_df[col].unique() for col in combined_df.columns if combined_df[col].nunique() < threshold}
+
+# Wyświetlanie wstępnego przeglądu danych
+print("\nLiczba danych:")
+print(data_count)
+
+print("\nTypy danych:")
+print(tabulate(data_types.reset_index(), headers=['Dane', 'Typ Danych'], tablefmt='pipe'))
+
+print("\nLiczba różnych wartości:")
+print(tabulate(unique_values_count.reset_index(), headers=['Dane', 'Liczba różnych wartości'], tablefmt='pipe'))
+
+if unique_values_details:
+    print("\nSzczegóły unikalnych wartości (dla kolumn z unikalnymi wartościami < próg):")
+    for col, values in unique_values_details.items():
+        print(f"\n{col}:")
+        print(tabulate(pd.DataFrame(values, columns=[col]), headers='keys', tablefmt='pipe'))
+```
+
+
+### Wykres prezentujący rzeczywiste zapotrzebowanie KSE w czasie.
+```{python}
+
+# Konwersja kolumn
+combined_df['Data'] = pd.to_datetime(combined_df['Data'], format='%Y%m%d')
+combined_df['Rzeczywiste zapotrzebowanie KSE'] = combined_df['Rzeczywiste zapotrzebowanie KSE'].str.replace(',', '.').astype(float)
+
+# Wykres rzeczywistego zapotrzebowania KSE w czasie
+plt.figure(figsize=(10, 5))
+plt.plot(combined_df['Data'], combined_df['Rzeczywiste zapotrzebowanie KSE'], label='Rzeczywiste zapotrzebowanie KSE')
+plt.xlabel('Data')
+plt.ylabel('Rzeczywiste zapotrzebowanie KSE')
+plt.title('Rzeczywiste zapotrzebowanie KSE w czasie')
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+
+### Istota wstępnego przeglądu danych.
+
+Wstępny przegląd danych to kluczowy krok w każdym projekcie analizy danych. Pomaga nam zrozumieć, co mamy przed sobą, zanim przejdziemy do bardziej zaawansowanych analiz. Oto kilka powodów, dlaczego jest to tak ważne:
+
+**Poznanie struktury danych:**
+
+Typy danych: Musimy wiedzieć, jakie typy danych znajdują się w naszych kolumnach. Na przykład, czy mamy do czynienia z liczbami, tekstem, czy datami? To ważne, bo różne typy danych wymagają różnych metod analizy.
+
+
+Liczba rekordów: Sprawdzenie, ile mamy danych, pozwala nam oszacować, jak dużo pracy nas czeka. Może się okazać, że dane są bardzo obszerne, co wymaga większej mocy obliczeniowej i więcej czasu na przetwarzanie.
+
+
+**Wykrywanie brakujących danych:**
+
+Brakujące wartości: Przegląd danych pomaga nam zidentyfikować, gdzie brakuje informacji. Brakujące dane mogą zniekształcać wyniki analizy, więc musimy zdecydować, jak sobie z nimi poradzić – na przykład, czy uzupełnimy je średnią wartością, czy usuniemy te rekordy.
+
+
+**Identyfikacja błędów i anomalii:**
+
+Wartości odstające: Wartości, które znacznie odbiegają od reszty danych, mogą wskazywać na błędy lub wyjątkowe przypadki. Musimy je zidentyfikować, żeby podjąć decyzję, czy je uwzględniać w analizie, czy może je wykluczyć.
+
+
+Błędy typograficzne: Sprawdzenie unikalnych wartości w danych tekstowych może pomóc wykryć literówki i niespójności, które mogą wpłynąć na jakość analizy.
+
+
+**Zrozumienie rozkładu danych:**
+
+Rozkład wartości: Musimy zrozumieć, jak dane są rozproszone – na przykład, czy większość wartości skupia się wokół pewnego punktu, czy są one równomiernie rozłożone. To pomoże nam wybrać odpowiednie metody analizy.
+
+
+Zmienność danych kategorycznych: Analizując liczbę unikalnych wartości w kolumnach tekstowych, możemy zobaczyć, jak różnorodne są nasze dane. Może to ujawnić dominujące kategorie, które mają duży wpływ na wyniki.
+
+
+**Planowanie dalszych kroków analizy:**
+
+Wybór metod analizy: Znając strukturę danych, możemy wybrać odpowiednie metody analizy. Na przykład, dla danych liczbowych możemy użyć regresji, a dla danych kategorycznych – analizy częstości.
+
+
+Potrzeba przekształceń: Wstępny przegląd może wskazać, czy musimy przekształcić dane – na przykład, standaryzować liczby, normalizować je, czy kodować dane kategoryczne na liczby.
+
+### Podsumowując
+Wstępny przegląd danych to fundament każdej analizy. Pomaga nam zidentyfikować potencjalne problemy, zrozumieć, z czym mamy do czynienia, i odpowiednio zaplanować kolejne kroki. Bez tego kroku możemy przeoczyć ważne kwestie, które wpłyną na nasze końcowe wyniki.
